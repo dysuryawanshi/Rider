@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  RIDER
+  DISPATCHER
+}
+
+enum OrderStatus {
+  ASSIGNED
+  ACCEPTED
+  PICKED_UP
+  DELIVERED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(RIDER)
+  vehicle      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  orders       Order[]
+}
+
+model Order {
+  id                String      @id @default(cuid())
+  code              String      @unique
+  restaurantName    String
+  restaurantAddress String
+  customerFirstName String
+  address           String
+  dropoffNote       String?
+  status            OrderStatus @default(ASSIGNED)
+  payoutCents       Int
+  riderId           String
+  rider             User        @relation(fields: [riderId], references: [id])
+  items             OrderItem[]
+  assignedAt        DateTime    @default(now())
+  acceptedAt        DateTime?
+  pickedUpAt        DateTime?
+  deliveredAt       DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([riderId, status])
+}
+
+model OrderItem {
+  id       String @id @default(cuid())
+  orderId  String
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  name     String
+  quantity Int
+}
